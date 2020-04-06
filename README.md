@@ -1,0 +1,2 @@
+# Pandemic
+A pandemic simulation
