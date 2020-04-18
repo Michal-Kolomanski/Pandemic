@@ -44,7 +44,7 @@ def who_moves(df, MR):
     import pandas as pd
     samplesize = math.floor(len(df) * MR)
     Movers = df.sample(n=samplesize).index.values.tolist()
-    hourStatus = pd.DataFrame(columns='Healthy,Infected,Ill,Recovered,Death'.split(','))
+    hourStatus = pd.DataFrame(columns='Healthy,Infected,Ill,Recovered,Death,Quarantined'.split(','))
 
     return hourStatus, Movers
 
@@ -71,7 +71,8 @@ def point_color(df):
             cols.append('green')
         elif df.loc[i, 'Infected'] == False: # Healthy
             cols.append('blue')
-
+        elif df.loc[i, 'Infected'] == 200: # Quarantined
+            cols.append('magenta')
     return cols
 
 def legend_color(Status):
@@ -93,6 +94,8 @@ def legend_color(Status):
             cols.append('green')
         elif i == 'Healthy':        # Healthy
             cols.append('blue')
+        elif i == 'Quarantined':    # Quarantined
+            cols.append('magenta')
 
     return cols
 
@@ -107,7 +110,7 @@ def Plot():
 
     # ploting dots
     cols = point_color(df)
-    Labels = ['Healthy', 'Infected', 'Ill', 'Recovered', 'Death']
+    Labels = ['Healthy', 'Infected', 'Ill', 'Recovered', 'Death', 'Quarantined']
     axs[0].cla()
     axs[0].scatter(df['X'], df['Y'], s=5, c=cols)
     cols = legend_color(hourStatus)
@@ -129,6 +132,7 @@ def Plot():
     axs[1].plot(hourStatus['Ill'], label=Labels[2], color=cols[2])
     axs[1].plot(hourStatus['Recovered'], label=Labels[3], color=cols[3])
     axs[1].plot(hourStatus['Death'], label=Labels[4], color=cols[4])
+    axs[1].plot(hourStatus['Quarantined'], label=Labels[5], color=cols[5])
     axs[1].legend(bbox_to_anchor=(0, 1), loc='upper left', borderaxespad=0.)
     plt.xlabel('Hours')
     plt.ylabel('Population')
@@ -146,7 +150,7 @@ def Move(xlimit, ylimit, dx):
     """
     global df, Movers
     for i in Movers:
-        if (df.loc[i, 'Infected'] == 100 or df.loc[i, 'Infected'] == 50 or df.loc[i, 'Infected'] == 10): Movers.remove(i)
+        if (df.loc[i, 'Infected'] == 100 or df.loc[i, 'Infected'] == 50 or df.loc[i, 'Infected'] == 10 or df.loc[i, 'Infected'] == 200): Movers.remove(i)
         df.loc[i, 'X'], df.loc[i, 'Y'] = (df.loc[i, 'X'] + dx) % xlimit, \
         (df.loc[i, 'Y'] + dx) % ylimit
 
@@ -165,6 +169,7 @@ def Count(hour):
     hourStatus.loc[hour, 'Ill'] = List.count(50)
     hourStatus.loc[hour, 'Recovered'] = List.count(10)
     hourStatus.loc[hour, 'Death'] = List.count(100)
+    hourStatus.loc[hour, 'Quarantined'] = List.count(200)
 
     return
 
@@ -256,6 +261,20 @@ def Kill_or_recover():
                 else:
                     recover(i)
 
+def quarantine():
+    """
+    quarantine mechanism
+    :return:
+    """
+    import random
+    global df
+
+    for i in range(len(df['Hour'])):
+        if df.loc[i, 'Infected'] == True:
+            if (random.uniform(0, 10) >= 9.5): # 5% to be quarantined (in each ts)
+                df.loc[i, 'Infected'] = 200
+
+
 def Next_hour():
     """
     simulating the passage of time
@@ -263,6 +282,7 @@ def Next_hour():
     """
     global df, hour
     hour += 1
+    quarantine()
     ill()
     Kill_or_recover()
     print(hourStatus.loc[len(hourStatus) - 1])
@@ -289,7 +309,6 @@ def gif():
                    append_images=frames[1:],
                    save_all=True,
                    duration=500, loop=0)
-
 
 
 # Main ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
